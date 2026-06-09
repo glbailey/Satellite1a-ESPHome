@@ -13,7 +13,9 @@ esphome:
 
 packages:
   FutureProofHomes.Satellite1:
-    url: &repo_url "https://github.com/futureproofhomes/satellite1-esphome"
+#    url: &repo_url "https://github.com/futureproofhomes/satellite1-esphome"
+#    ref: &repo_ref "staging"
+    url: &repo_url "https://github.com/glbailey/Satellite1a-ESPHome"
     ref: &repo_ref "staging"
     refresh: 1s
     files:
