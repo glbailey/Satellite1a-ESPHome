@@ -1,0 +1,84 @@
+Satelite 1 Fix for "Impossible ch1..." errors
+
+##### INITIAL FIX FOR V0.1.5Beta4 USING ESPHOME 2026-2-4 #####
+
+I did find a solution to this and the "Impossible ch1/..." errors. Here is my fix:
+
+Symptom/Condition (date: 260323):
+Satelite 1 creating continuous errors in HA error log.
+Home Assistant (version 2026-3-1)
+Satelite 1 version 0.1.5Beta4
+ESPHome version 2026-2-4
+
+Logger: homeassistant.components.esphome.manager
+Source: components/esphome/manager.py:520
+integration: ESPHome (documentation, issues)
+First occurred: March 12, 2026 at 3:38:53 PM (14304 occurrences)
+Last logged: 8:08:41 AM
+Satellite1 d0fa0c: [W][ltr_als_ps:176]: Can't get data after several tries.
+Satellite1 d0fa0c: [W][component:390]: ltr_als_ps.sensor set Warning flag: unspecified
+Satellite1 d0fa0c: [W][component:430]: ltr_als_ps.sensor cleared Warning flag
+Satellite1 d0fa0c: [W][ltr_als_ps:492]: Impossible ch1/(ch0 + ch1) ratio
+Satellite1 d0fa0c: [W][ltr_als_ps:472]: Sensors blacked out
+
+Seems that the ambient light sensor LTR-303ALS is intermittently mis-communicating even
+though some (occasional) light level readings do appear in HA.
+
+Found the above error messages are generated in:
+https://github.com/esphome/esphome/blob/dev/esphome/components/ltr_als_ps/ltr_als_ps.cpp
+and apparently, occasionally the two sensor channels are misread as 0 causing a divide by
+0 condition.
+
+The device is connected to the I2C bus at address 29 and device bus speed from datasheet
+is rated as "maximum 400KHz".
+
+In file /config/common/core_board.yaml the I2C bus is specified (line 67) to run at
+400KHz. We theorized that the bus speed/timing of 400KHz was marginal with our particular
+sensor device.
+
+To test we dropped the I2C frequency to the default 50KHz. After compiling and uploading,
+the satelite 1 no longer has the above errors. We also could not detect any negative
+effects on the other 4 devices connected to the I2C bus (the DAC, AudioAmp, temp/hum
+sensor and PDNegotiator).
+
+Modify file: /config/common/core_board.yaml:
+33 # slow down i2c bus as ltr-als-ps has intermittent issues
+34 i2c:
+35   - id: i2c_0
+36     sda: GPIO5
+37     scl: GPIO6
+38     frequency: 100kHz   <<<--- change from 400KHz
+39     scan: True
+
+Also modify the ESPHome yaml code (gihub glbailey/Satellite1a-ESPHome/config/satelite1.dashboard.yaml) to call the modified packages by changing lines as follows:
+
+packages:
+  FutureProofHomes.Satellite1:
+# modification to slow down ltr-als-ps sensor to fix errors
+#    url: https://github.com/futureproofhomes/satellite1-esphome
+#    ref: staging  # Make sure to also change the ext_comp_repo_ref below
+    url: https://github.com/glbailey/Satellite1a-ESPHome
+    ref: develop  # Make sure to also change the ext_comp_repo_ref below
+
+NOTE: Above fix posted to https://github.com/FutureProofHomes/Satellite1-ESPHome/issues/362 on 260324. Used above modifications to Satellite1a-ESPHome in glbailey github, revision 0.1.5Beta4 built with ESPHome 2026.2.4
+
+##### UPDATE TO V0.2.0 and ESPHOME 2026-4-5 (260613) #########
+
+Updated to Satellite1 V 0.2.0:develop which requires ESPHome 2026.4.5
+
+Modified /config/common/core_board.yaml line 38 to 100KHz
+Modified ESPHome yaml config with HA and casper details, added mWW section:
+
+micro_wake_word:
+  id: mww
+  models:
+    - id: hey_casper
+      model: /config/hey_casper.json
+      
+Recompiled and installed using ESPHome 2026-4-5
+
+####################
+
+
+
+
