@@ -54,11 +54,11 @@ wifi:
   password: !secret wifi_password
 
 ## OPTIONALLY, uncomment the following lines to set a custom micro wake word model
-# micro_wake_word:
-#   id: mww
-#   models:
-#     - id: new_wake_word
-#       model: https://github.com/kahrendt/microWakeWord/releases/download/stop/stop.json
+micro_wake_word:
+  id: mww
+  models:
+    - id: hey_casper
+      model: /config/hey_casper.json
 #     # uncomment the following line to remove the default "hey_jarvis" wake word
 #     - id: !remove hey_jarvis
 # you also want to remove the sensitivity selector as it is hard coded to the provided models
